@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -5,6 +6,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from backend.agent import agent_loop, chat_with_character
 from backend.memory import init_collections
 from backend.models import (
     Character,
@@ -25,7 +27,9 @@ async def lifespan(app: FastAPI):
         init_collections()
     except Exception as exc:
         logger.warning(f"Qdrant unavailable at startup (will retry on first use): {exc}")
+    loop_task = asyncio.create_task(agent_loop())
     yield
+    loop_task.cancel()
 
 
 app = FastAPI(title="Mach AI Character Platform", lifespan=lifespan)
@@ -77,7 +81,7 @@ async def get_character(character_id: str):
 
 
 # ---------------------------------------------------------------------------
-# Chat  (full Claude logic wired in Step 3)
+# Chat  (Claude + RAG)
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -85,10 +89,10 @@ async def chat(req: ChatRequest):
     char = characters.get(req.character_id)
     if not char:
         raise HTTPException(status_code=404, detail="Character not found")
-    # Placeholder replaced in Step 3 with Claude + RAG response
+    reply = await chat_with_character(char, req.message)
     return ChatResponse(
         character_id=char.id,
-        response="[ SYSTEM: Claude integration coming in Step 3 ]",
+        response=reply,
         current_action=char.current_action,
         stats=char.stats,
     )
