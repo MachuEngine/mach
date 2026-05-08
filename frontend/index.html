@@ -70,7 +70,7 @@
       width: 100%;
       height: 280px;
       background: #080810;
-      overflow: hidden;
+      overflow: visible;
       border: 4px solid #333;
       /* subtle pixel grid */
       background-image:
@@ -130,19 +130,51 @@
       white-space: nowrap;
     }
 
+    /* Thought bubble */
+    #thought-bubble {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0a0a20;
+      border: 2px solid #3a3a7c;
+      color: #7a7acc;
+      font-size: 5px;
+      padding: 5px 9px;
+      max-width: 160px;
+      min-width: 70px;
+      text-align: center;
+      line-height: 1.9;
+      white-space: normal;
+      display: none;
+      z-index: 20;
+    }
+    #thought-bubble::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-style: solid;
+      border-width: 5px 4px 0 4px;
+      border-color: #3a3a7c transparent transparent transparent;
+    }
+
     /* Action info bar below room */
     #action-bar {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       padding: 6px 10px;
       background: #0a0a14;
       border: 2px solid #222;
       border-top: none;
       margin-bottom: 8px;
     }
+    #action-left { display: flex; flex-direction: column; gap: 3px; }
     #action-text { font-size: 7px; color: #ffdd57; letter-spacing: 1px; }
-    #diary-text  { font-size: 5px; color: #444; max-width: 55%; text-align: right; line-height: 1.8; }
+    #goal-text   { font-size: 5px; color: #3a3a6c; line-height: 1.8; }
+    #diary-text  { font-size: 5px; color: #444; max-width: 50%; text-align: right; line-height: 1.8; }
 
     /* ── Chat Panel ──────────────────────────────────────── */
     #chat-panel .nes-container { padding: 10px 14px; }
@@ -152,10 +184,12 @@
       background: #0a0a0a; border: 2px solid #333;
     }
     .chat-msg { font-size: 7px; margin-bottom: 9px; line-height: 2; word-break: break-word; }
-    .chat-msg.user   { color: #92cc41; }
+    .chat-msg.user       { color: #92cc41; }
     .chat-msg.user::before { content: "> YOU:  "; }
-    .chat-msg.char   { color: #fff; }
-    .chat-msg.system { color: #555; }
+    .chat-msg.char       { color: #fff; }
+    .chat-msg.system     { color: #555; }
+    .chat-msg.proactive  { color: #ffdd57; font-style: italic; }
+    .chat-msg.proactive::before { content: "★ "; }
     .chat-input-row  { display: flex; gap: 8px; align-items: center; }
     #chat-input { flex: 1; font-size: 7px !important; background: #111 !important; color: #fff !important; }
     #send-btn   { font-size: 7px !important; white-space: nowrap; }
@@ -272,6 +306,7 @@
 
       <!-- Character -->
       <div id="char-entity">
+        <div id="thought-bubble"><span id="thought-text"></span></div>
         <div id="char-sprite">(=^-^=)</div>
         <div id="char-nametag">---</div>
       </div>
@@ -279,7 +314,10 @@
 
     <!-- Action info bar -->
     <div id="action-bar">
-      <span id="action-text">* CHILLING... *</span>
+      <div id="action-left">
+        <span id="action-text">* CHILLING... *</span>
+        <span id="goal-text"></span>
+      </div>
       <span id="diary-text"></span>
     </div>
   </div>
@@ -449,12 +487,20 @@
       updateStats(msg.stats);
       document.getElementById('action-text').textContent = LABELS[msg.current_action] || `* ${msg.current_action} *`;
 
+      if (msg.goal) {
+        document.getElementById('goal-text').textContent = `▷ ${msg.goal}`;
+      }
+      updateThought(msg.thought || '');
+
       placeCharacter(newX, newY, msg.current_action, !firstState);
       firstState = false;
 
       if (msg.diary) {
         document.getElementById('diary-text').textContent = msg.diary;
         appendSystem(`[ TICK ] ${msg.diary}`);
+      }
+      if (msg.proactive_msg) {
+        appendChat('proactive', msg.proactive_msg, characterName);
       }
     };
 
@@ -471,6 +517,18 @@
     const el = document.getElementById('ws-status');
     el.textContent = online ? '● WS: CONNECTED' : '● WS: DISCONNECTED';
     el.className   = 'ws-status ' + (online ? 'connected' : 'disconnected');
+  }
+
+  // ── Thought bubble ───────────────────────────────────────────────────────
+  function updateThought(thought) {
+    const bubble = document.getElementById('thought-bubble');
+    const text   = document.getElementById('thought-text');
+    if (thought) {
+      text.textContent = thought;
+      bubble.style.display = 'block';
+    } else {
+      bubble.style.display = 'none';
+    }
   }
 
   // ── Stats ─────────────────────────────────────────────────────────────────
@@ -538,9 +596,11 @@
     const log = document.getElementById('chat-log');
     const div = document.createElement('div');
     div.className = `chat-msg ${type}`;
-    div.textContent = type === 'char'
-      ? `> ${(label || characterName).toUpperCase()}: ${text}`
-      : text;
+    if (type === 'char' || type === 'proactive') {
+      div.textContent = `> ${(label || characterName).toUpperCase()}: ${text}`;
+    } else {
+      div.textContent = text;
+    }
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
     return div;

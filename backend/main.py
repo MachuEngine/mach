@@ -135,6 +135,8 @@ async def websocket_endpoint(websocket: WebSocket, character_id: str):
             "name": char.name,
             "current_action": char.current_action,
             "stats": char.stats.model_dump(),
+            "thought": char.thought,
+            "goal": char.goal,
             "x": char.x,
             "y": char.y,
         })

@@ -43,6 +43,8 @@ class Character(BaseModel):
     created_at:     float          = Field(default_factory=time.time)
     x:              float          = Field(default=50.0)
     y:              float          = Field(default=50.0)
+    thought:        str            = ""
+    goal:           str            = ""
 
 
 # --- Request / Response schemas ---

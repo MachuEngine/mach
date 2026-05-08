@@ -1,6 +1,8 @@
 import asyncio
 import json
 import logging
+import random
+from typing import Optional
 
 import openai
 
@@ -31,6 +33,7 @@ def _build_system_prompt(char: Character, diary_mems: list, chat_mems: list) -> 
         mem_block += "\n\n[PAST DIARY ENTRIES]\n" + "\n".join(f"- {m}" for m in diary_mems)
     if chat_mems:
         mem_block += "\n\n[PAST CONVERSATIONS]\n" + "\n".join(f"- {m}" for m in chat_mems)
+    goal_line = f"\n- Current Goal: {char.goal}" if char.goal else ""
     return (
         f"You are {char.name}. {char.persona}\n\n"
         f"[CURRENT STATS]\n"
@@ -40,6 +43,7 @@ def _build_system_prompt(char: Character, diary_mems: list, chat_mems: list) -> 
         f"- Hunger: {s.hunger}/100 (0 = starving, 100 = full)\n"
         f"- Mood: {s.mood}\n"
         f"- Current Action: {char.current_action}"
+        f"{goal_line}"
         f"{mem_block}"
     )
 
@@ -52,6 +56,81 @@ async def _fetch_memories(char: Character, query: str):
     except Exception as exc:
         logger.warning(f"Memory retrieval failed for {char.name}: {exc}")
         return [], []
+
+
+# ---------------------------------------------------------------------------
+# Inner thought, goal, proactive speech
+# ---------------------------------------------------------------------------
+
+async def generate_thought(char: Character) -> str:
+    diary_mems, _ = await _fetch_memories(char, f"feelings emotions {char.name}")
+    system = _build_system_prompt(char, diary_mems, [])
+    prompt = (
+        "In one short sentence, express your current inner thought or feeling. "
+        "Be genuine and authentic to your personality. "
+        "No quotes, no labels — just the raw thought in first person."
+    )
+    try:
+        resp = await _openai.chat.completions.create(
+            model=OPENAI_MODEL,
+            max_tokens=60,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        return resp.choices[0].message.content.strip().strip('"').strip("'")
+    except Exception as exc:
+        logger.warning(f"Thought generation failed for {char.name}: {exc}")
+        return ""
+
+
+async def update_goal(char: Character) -> str:
+    diary_mems, _ = await _fetch_memories(char, "goals desires aspirations")
+    system = _build_system_prompt(char, diary_mems, [])
+    prompt = (
+        "What is your current short-term goal or desire? "
+        "One brief sentence. Stay authentic to your persona."
+    )
+    try:
+        resp = await _openai.chat.completions.create(
+            model=OPENAI_MODEL,
+            max_tokens=50,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        return resp.choices[0].message.content.strip().strip('"').strip("'")
+    except Exception as exc:
+        logger.warning(f"Goal update failed for {char.name}: {exc}")
+        return char.goal
+
+
+async def maybe_proactive_message(char: Character, thought: str) -> Optional[str]:
+    if random.random() > 0.35:
+        return None
+    _, chat_mems = await _fetch_memories(char, thought)
+    system = _build_system_prompt(char, [], chat_mems)
+    prompt = (
+        f"You're currently thinking: '{thought}'\n"
+        "You want to say something to your companion right now — unprompted. "
+        "Could be sharing a feeling, a stray thought, a question, or just something on your mind. "
+        "Keep it short (1-2 sentences). Speak naturally. Stay in character."
+    )
+    try:
+        resp = await _openai.chat.completions.create(
+            model=OPENAI_MODEL,
+            max_tokens=100,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception as exc:
+        logger.warning(f"Proactive message failed for {char.name}: {exc}")
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -71,13 +150,19 @@ def _fallback_action(char: Character):
     return Action.CHILLING, "All stats are fine, just relaxing."
 
 
-async def decide_action(char: Character):
+async def decide_action(char: Character, thought: str = "", goal: str = ""):
     diary_mems, _ = await _fetch_memories(char, f"action decision stats for {char.name}")
     system = _build_system_prompt(char, diary_mems, [])
+    extra = ""
+    if thought:
+        extra += f'\nInner thought right now: "{thought}"'
+    if goal:
+        extra += f'\nCurrent goal: "{goal}"'
     prompt = (
         f"Your current stats: Energy={char.stats.energy}, "
         f"Cleanliness={char.stats.cleanliness}, Knowledge={char.stats.knowledge}, "
-        f"Hunger={char.stats.hunger} (eat if below 30!), Mood={char.stats.mood}.\n\n"
+        f"Hunger={char.stats.hunger} (eat if below 30!), Mood={char.stats.mood}."
+        f"{extra}\n\n"
         "Choose your next action. Respond ONLY with a single line of valid JSON:\n"
         '{"action": "<ACTION>", "reason": "<one sentence>"}\n'
         f"Valid actions: {', '.join(a.value for a in Action)}"
@@ -108,7 +193,15 @@ async def decide_action(char: Character):
 # ---------------------------------------------------------------------------
 
 async def agent_tick(char: Character) -> None:
-    action, reason = await decide_action(char)
+    # Inner thought first — this informs the action decision
+    thought = await generate_thought(char)
+    char.thought = thought
+
+    # Refresh goal when empty or randomly (~20% of ticks)
+    if not char.goal or random.random() < 0.2:
+        char.goal = await update_goal(char)
+
+    action, reason = await decide_action(char, thought=thought, goal=char.goal)
     char.current_action = action
     char.stats = apply_action_tick(char.stats, action)
     zone = ZONES.get(action, {"x": 50.0, "y": 50.0})
@@ -127,6 +220,8 @@ async def agent_tick(char: Character) -> None:
     except Exception as exc:
         logger.warning(f"Diary write failed for {char.name}: {exc}")
 
+    proactive = await maybe_proactive_message(char, thought)
+
     await manager.broadcast(char.id, {
         "type": "state",
         "character_id": char.id,
@@ -134,10 +229,13 @@ async def agent_tick(char: Character) -> None:
         "current_action": char.current_action,
         "stats": char.stats.model_dump(),
         "diary": entry,
+        "thought": thought,
+        "goal": char.goal,
+        "proactive_msg": proactive,
         "x": char.x,
         "y": char.y,
     })
-    logger.info(f"[TICK] {char.name} → {action.value} | {reason[:80]}")
+    logger.info(f"[TICK] {char.name} → {action.value} | thought: {thought[:60]}")
 
 
 # ---------------------------------------------------------------------------
