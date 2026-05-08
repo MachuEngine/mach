@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
-CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o")
 
 QDRANT_URL: str = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY") or None

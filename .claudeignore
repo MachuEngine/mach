@@ -3,27 +3,17 @@ venv/
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
 *.egg-info/
 dist/
 build/
-.eggs/
 
 # Environment
 .env
-.env.local
 
 # Test artifacts
 .pytest_cache/
 htmlcov/
 .coverage
-coverage.xml
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
 
 # macOS
 .DS_Store

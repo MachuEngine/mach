@@ -2,12 +2,12 @@ import asyncio
 import json
 import logging
 
-import anthropic
+import openai
 
 from backend.config import (
     AGENT_LOOP_INTERVAL_MINUTES,
-    CLAUDE_API_KEY,
-    CLAUDE_MODEL,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
     COLLECTION_CHAT,
     COLLECTION_DIARY,
 )
@@ -17,7 +17,7 @@ from backend.store import characters, manager
 
 logger = logging.getLogger(__name__)
 
-_claude = anthropic.AsyncAnthropic(api_key=CLAUDE_API_KEY)
+_openai = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 
 # ---------------------------------------------------------------------------
@@ -80,14 +80,15 @@ async def decide_action(char: Character):
         f"Valid actions: {', '.join(a.value for a in Action)}"
     )
     try:
-        resp = await _claude.messages.create(
-            model=CLAUDE_MODEL,
+        resp = await _openai.chat.completions.create(
+            model=OPENAI_MODEL,
             max_tokens=150,
-            system=system,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
         )
-        text = resp.content[0].text.strip()
-        # Strip markdown fences if Claude wrapped the JSON
+        text = resp.choices[0].message.content.strip()
         if "```" in text:
             text = text.split("```")[1].lstrip("json").strip()
         data = json.loads(text)
@@ -95,7 +96,7 @@ async def decide_action(char: Character):
         reason = data.get("reason", "")
         return action, reason
     except Exception as exc:
-        logger.warning(f"Claude action decision failed for {char.name}: {exc} — using fallback")
+        logger.warning(f"OpenAI action decision failed for {char.name}: {exc} — using fallback")
         return _fallback_action(char)
 
 
@@ -147,18 +148,18 @@ async def chat_with_character(char: Character, message: str) -> str:
     )
 
     try:
-        resp = await _claude.messages.create(
-            model=CLAUDE_MODEL,
+        resp = await _openai.chat.completions.create(
+            model=OPENAI_MODEL,
             max_tokens=500,
-            system=system,
             messages=[
+                {"role": "system", "content": system},
                 {"role": "user", "content": f"{action_context}\n\nUser says: {message}"},
             ],
         )
-        reply = resp.content[0].text.strip()
+        reply = resp.choices[0].message.content.strip()
     except Exception as exc:
-        logger.error(f"Claude chat failed for {char.name}: {exc}")
-        reply = f"[ ERROR: Claude unreachable — {exc} ]"
+        logger.error(f"OpenAI chat failed for {char.name}: {exc}")
+        reply = f"[ ERROR: OpenAI unreachable — {exc} ]"
 
     try:
         log = f"User: {message}\n{char.name}: {reply}"
