@@ -20,207 +20,149 @@
       margin: 0;
       padding: 16px;
       background-image: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.08) 2px,
-        rgba(0,0,0,0.08) 4px
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
       );
     }
 
     /* ── Creation Screen ─────────────────────────────────── */
-    #create-screen {
-      max-width: 580px;
-      margin: 32px auto;
-    }
-    .create-title {
-      font-size: 18px;
-      color: #ffdd57;
-      text-align: center;
-      margin-bottom: 4px;
-      letter-spacing: 4px;
-    }
-    .create-subtitle {
-      font-size: 8px;
-      color: #92cc41;
-      text-align: center;
-      margin-bottom: 28px;
-      letter-spacing: 2px;
-    }
+    #create-screen { max-width: 580px; margin: 32px auto; }
+    .create-title  { font-size: 18px; color: #ffdd57; text-align: center; margin-bottom: 4px; letter-spacing: 4px; }
+    .create-subtitle { font-size: 8px; color: #92cc41; text-align: center; margin-bottom: 28px; letter-spacing: 2px; }
     .form-group { margin-bottom: 20px; }
-    .form-group label {
-      display: block;
-      font-size: 7px;
-      color: #92cc41;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
-    }
-    .nes-input,
-    .nes-textarea {
-      width: 100%;
-      font-size: 8px !important;
-      background: #111 !important;
-      color: #fff !important;
-    }
-    #start-btn {
-      width: 100%;
-      font-size: 9px !important;
-      margin-top: 8px;
-    }
-    #create-error {
-      font-size: 7px;
-      color: #e76e55;
-      margin-top: 10px;
-      text-align: center;
-      min-height: 14px;
-    }
-    #loading-msg {
-      font-size: 7px;
-      color: #ffdd57;
-      text-align: center;
-      margin-top: 10px;
-      display: none;
-    }
+    .form-group label { display: block; font-size: 7px; color: #92cc41; margin-bottom: 8px; letter-spacing: 1px; }
+    .nes-input, .nes-textarea { width: 100%; font-size: 8px !important; background: #111 !important; color: #fff !important; }
+    #start-btn { width: 100%; font-size: 9px !important; margin-top: 8px; }
+    #create-error { font-size: 7px; color: #e76e55; margin-top: 10px; text-align: center; min-height: 14px; }
+    #loading-msg  { font-size: 7px; color: #ffdd57; text-align: center; margin-top: 10px; display: none; }
 
     /* ── Game Screen ─────────────────────────────────────── */
-    #game-screen {
-      max-width: 760px;
-      margin: 0 auto;
-      display: none;
+    #game-screen { max-width: 760px; margin: 0 auto; display: none; }
+
+    .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .game-title  { font-size: 11px; color: #ffdd57; letter-spacing: 3px; }
+    #char-name-display { font-size: 9px; color: #fff; }
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .player-tag  { font-size: 7px; color: #92cc41; }
+    #level-badge { font-size: 7px; color: #ffdd57; }
+
+    /* ── Stats Panel ─────────────────────────────────────── */
+    #stats-panel { margin-bottom: 10px; }
+    #stats-panel .nes-container { padding: 10px 16px; }
+    .stats-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+    .stat-row    { display: flex; align-items: center; gap: 8px; }
+    .stat-label  { font-size: 6px; color: #92cc41; white-space: nowrap; min-width: 84px; }
+    .stat-bar    { flex: 1; height: 12px; }
+    .stat-val    { font-size: 7px; color: #fff; min-width: 22px; text-align: right; }
+    .mood-row    { display: flex; align-items: center; gap: 8px; grid-column: span 2; margin-top: 2px; }
+    .mood-label  { font-size: 6px; color: #92cc41; min-width: 84px; }
+    #mood-value  { font-size: 7px; color: #ffdd57; }
+    progress.nes-progress { height: 14px; width: 100%; }
+
+    @keyframes danger-blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    .stat-danger { animation: danger-blink 0.8s step-end infinite; }
+
+    /* ── Room ────────────────────────────────────────────── */
+    #room-wrap { margin-bottom: 6px; }
+
+    #room {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      background: #080810;
+      overflow: hidden;
+      border: 4px solid #333;
+      /* subtle pixel grid */
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 40px 40px;
     }
 
-    /* Header */
-    .game-header {
+    /* floor strip */
+    #room::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: #1a1a2e;
+    }
+
+    /* Zone labels (furniture) */
+    .zone-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+      line-height: 1.8;
+      opacity: 0.55;
+    }
+    .zone-icon { font-size: 9px; display: block; color: #3a3a5c; }
+    .zone-name { font-size: 4px; display: block; color: #2e2e4a; letter-spacing: 1px; margin-top: 2px; }
+
+    /* Character entity */
+    #char-entity {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      /* transition set only for left/top — no transform, so flip is instant */
+      transition: left 3s linear, top 3s linear;
+      text-align: center;
+      z-index: 10;
+      user-select: none;
+    }
+
+    /* Flip class — applied while walking left */
+    #char-entity.flip { transform: translate(-50%, -50%) scaleX(-1); }
+
+    #char-sprite {
+      font-size: 22px;
+      display: block;
+      animation: bob 2s ease-in-out infinite;
+    }
+    @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+
+    #char-nametag {
+      font-size: 5px;
+      color: #92cc41;
+      margin-top: 4px;
+      white-space: nowrap;
+    }
+
+    /* Action info bar below room */
+    #action-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      padding: 6px 10px;
+      background: #0a0a14;
+      border: 2px solid #222;
+      border-top: none;
+      margin-bottom: 8px;
     }
-    .game-title        { font-size: 11px; color: #ffdd57; letter-spacing: 3px; }
-    #char-name-display { font-size: 9px; color: #fff; }
-    .header-right      { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-    .player-tag        { font-size: 7px; color: #92cc41; }
-    #level-badge       { font-size: 7px; color: #ffdd57; }
+    #action-text { font-size: 7px; color: #ffdd57; letter-spacing: 1px; }
+    #diary-text  { font-size: 5px; color: #444; max-width: 55%; text-align: right; line-height: 1.8; }
 
-    /* Stats Panel */
-    #stats-panel  { margin-bottom: 10px; }
-    #stats-panel .nes-container { padding: 10px 16px; }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px 24px;
-    }
-    .stat-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .stat-label {
-      font-size: 6px;
-      color: #92cc41;
-      white-space: nowrap;
-      min-width: 84px;
-    }
-    .stat-bar { flex: 1; height: 12px; }
-    .stat-val  { font-size: 7px; color: #fff; min-width: 22px; text-align: right; }
-
-    .mood-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      grid-column: span 2;
-      margin-top: 2px;
-    }
-    .mood-label { font-size: 6px; color: #92cc41; min-width: 84px; }
-    #mood-value { font-size: 7px; color: #ffdd57; }
-
-    progress.nes-progress { height: 14px; width: 100%; }
-
-    /* Critical stat warning blink */
-    @keyframes danger-blink {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.3; }
-    }
-    .stat-danger { animation: danger-blink 0.8s step-end infinite; }
-
-    /* Character Viewport */
-    #character-viewport { margin-bottom: 10px; }
-    #character-viewport .nes-container {
-      min-height: 150px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      background: #0a0a0a !important;
-    }
-    #char-sprite {
-      font-size: 26px;
-      letter-spacing: 3px;
-      animation: bob 2s ease-in-out infinite;
-    }
-    @keyframes bob {
-      0%, 100% { transform: translateY(0px); }
-      50%       { transform: translateY(-8px); }
-    }
-    #action-text {
-      font-size: 8px;
-      color: #ffdd57;
-      letter-spacing: 2px;
-    }
-    #diary-text {
-      font-size: 6px;
-      color: #666;
-      max-width: 92%;
-      text-align: center;
-      line-height: 2;
-      min-height: 14px;
-    }
-
-    /* Chat Panel */
+    /* ── Chat Panel ──────────────────────────────────────── */
     #chat-panel .nes-container { padding: 10px 14px; }
     #chat-log {
-      height: 190px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-      padding: 8px;
-      background: #0a0a0a;
-      border: 2px solid #333;
+      height: 190px; overflow-y: auto;
+      margin-bottom: 10px; padding: 8px;
+      background: #0a0a0a; border: 2px solid #333;
     }
-    .chat-msg {
-      font-size: 7px;
-      margin-bottom: 9px;
-      line-height: 2;
-      word-break: break-word;
-    }
+    .chat-msg { font-size: 7px; margin-bottom: 9px; line-height: 2; word-break: break-word; }
     .chat-msg.user   { color: #92cc41; }
     .chat-msg.user::before { content: "> YOU:  "; }
     .chat-msg.char   { color: #fff; }
     .chat-msg.system { color: #555; }
-
-    .chat-input-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    #chat-input {
-      flex: 1;
-      font-size: 7px !important;
-      background: #111 !important;
-      color: #fff !important;
-    }
-    #send-btn { font-size: 7px !important; white-space: nowrap; }
-
-    .ws-status {
-      font-size: 6px;
-      margin-top: 6px;
-      text-align: right;
-    }
+    .chat-input-row  { display: flex; gap: 8px; align-items: center; }
+    #chat-input { flex: 1; font-size: 7px !important; background: #111 !important; color: #fff !important; }
+    #send-btn   { font-size: 7px !important; white-space: nowrap; }
+    .ws-status  { font-size: 6px; margin-top: 6px; text-align: right; }
     .ws-status.connected    { color: #92cc41; }
     .ws-status.disconnected { color: #e76e55; }
 
-    /* Scrollbar */
     #chat-log::-webkit-scrollbar       { width: 6px; }
     #chat-log::-webkit-scrollbar-track { background: #111; }
     #chat-log::-webkit-scrollbar-thumb { background: #444; }
@@ -235,25 +177,18 @@
 <div id="create-screen">
   <div class="nes-container with-title is-dark is-centered">
     <p class="title">NEW GAME</p>
-
     <p class="create-title">★ MACH ★</p>
     <p class="create-subtitle">AI CHARACTER SIMULATOR</p>
-
     <div class="form-group">
       <label for="char-name">CHARACTER NAME</label>
-      <input id="char-name" type="text" class="nes-input is-dark"
-             placeholder="e.g.  PIXEL" maxlength="20">
+      <input id="char-name" type="text" class="nes-input is-dark" placeholder="e.g.  PIXEL" maxlength="20">
     </div>
-
     <div class="form-group">
       <label for="char-persona">PERSONA</label>
       <textarea id="char-persona" class="nes-textarea is-dark" rows="4"
         placeholder="Describe personality, quirks, backstory..."></textarea>
     </div>
-
-    <button id="start-btn" class="nes-btn is-success">
-      &gt; INSERT COIN &amp; START
-    </button>
+    <button id="start-btn" class="nes-btn is-success">&gt; INSERT COIN &amp; START</button>
     <p id="create-error"></p>
     <p id="loading-msg">BOOTING CHARACTER...</p>
   </div>
@@ -272,59 +207,84 @@
     </div>
   </div>
 
-  <!-- Stats Panel -->
+  <!-- Stats -->
   <div id="stats-panel">
     <div class="nes-container is-dark with-title">
       <p class="title">STATS</p>
       <div class="stats-grid">
-
         <div class="stat-row">
           <span class="stat-label">ENERGY</span>
-          <progress id="bar-energy" class="nes-progress is-success stat-bar"
-                    value="70" max="100"></progress>
+          <progress id="bar-energy" class="nes-progress is-success stat-bar" value="70" max="100"></progress>
           <span id="val-energy" class="stat-val">70</span>
         </div>
-
         <div class="stat-row">
           <span class="stat-label">KNOWLEDGE</span>
-          <progress id="bar-knowledge" class="nes-progress is-primary stat-bar"
-                    value="50" max="100"></progress>
+          <progress id="bar-knowledge" class="nes-progress is-primary stat-bar" value="50" max="100"></progress>
           <span id="val-knowledge" class="stat-val">50</span>
         </div>
-
         <div class="stat-row">
           <span class="stat-label">CLEANNESS</span>
-          <progress id="bar-cleanliness" class="nes-progress is-warning stat-bar"
-                    value="70" max="100"></progress>
+          <progress id="bar-cleanliness" class="nes-progress is-warning stat-bar" value="70" max="100"></progress>
           <span id="val-cleanliness" class="stat-val">70</span>
         </div>
-
         <div class="stat-row">
           <span class="stat-label">HUNGER</span>
-          <progress id="bar-hunger" class="nes-progress is-error stat-bar"
-                    value="70" max="100"></progress>
+          <progress id="bar-hunger" class="nes-progress is-error stat-bar" value="70" max="100"></progress>
           <span id="val-hunger" class="stat-val">70</span>
         </div>
-
         <div class="mood-row">
           <span class="mood-label">MOOD</span>
           <span id="mood-value">CHILL</span>
         </div>
-
       </div>
     </div>
   </div>
 
-  <!-- Character Viewport -->
-  <div id="character-viewport">
-    <div class="nes-container is-dark is-rounded is-centered">
-      <div id="char-sprite">(=^-^=)</div>
-      <div id="action-text">* CHILLING... *</div>
-      <div id="diary-text"></div>
+  <!-- Room -->
+  <div id="room-wrap">
+    <div id="room">
+
+      <!-- Zone labels (furniture) positioned to match backend ZONES -->
+      <div class="zone-label" style="left:10%;top:20%">
+        <span class="zone-icon">(-.-)z</span>
+        <span class="zone-name">BED</span>
+      </div>
+      <div class="zone-label" style="left:55%;top:18%">
+        <span class="zone-icon">(*^o^*)</span>
+        <span class="zone-name">KITCHEN</span>
+      </div>
+      <div class="zone-label" style="left:82%;top:52%">
+        <span class="zone-icon">(>_<)..</span>
+        <span class="zone-name">DESK</span>
+      </div>
+      <div class="zone-label" style="left:16%;top:62%">
+        <span class="zone-icon">(=^.^=)</span>
+        <span class="zone-name">COUCH</span>
+      </div>
+      <div class="zone-label" style="left:46%;top:76%">
+        <span class="zone-icon">H(>.<H)</span>
+        <span class="zone-name">SINK</span>
+      </div>
+      <div class="zone-label" style="left:80%;top:78%">
+        <span class="zone-icon">(o_o)/</span>
+        <span class="zone-name">GYM</span>
+      </div>
+
+      <!-- Character -->
+      <div id="char-entity">
+        <div id="char-sprite">(=^-^=)</div>
+        <div id="char-nametag">---</div>
+      </div>
+    </div>
+
+    <!-- Action info bar -->
+    <div id="action-bar">
+      <span id="action-text">* CHILLING... *</span>
+      <span id="diary-text"></span>
     </div>
   </div>
 
-  <!-- Chat Panel -->
+  <!-- Chat -->
   <div id="chat-panel">
     <div class="nes-container is-dark with-title">
       <p class="title">CHAT</p>
@@ -332,8 +292,7 @@
         <div class="chat-msg system">[ SYSTEM ONLINE — TALK TO YOUR CHARACTER ]</div>
       </div>
       <div class="chat-input-row">
-        <input id="chat-input" type="text" class="nes-input is-dark"
-               placeholder="say something..." maxlength="200">
+        <input id="chat-input" type="text" class="nes-input is-dark" placeholder="say something..." maxlength="200">
         <button id="send-btn" class="nes-btn is-primary" onclick="sendChat()">SEND</button>
       </div>
       <div id="ws-status" class="ws-status disconnected">● WS: DISCONNECTED</div>
@@ -343,23 +302,21 @@
 </div><!-- end #game-screen -->
 
 <script>
-  // ── State ────────────────────────────────────────────────────────────────
-  let characterId   = null;
-  let characterName = 'CHARACTER';
-  let ws            = null;
-  let chatBusy      = false;
+  // ── Constants ────────────────────────────────────────────────────────────
+  const WALK_MS = 3000; // must match CSS transition duration
 
-  // ── Action visuals ───────────────────────────────────────────────────────
   const SPRITES = {
     SLEEPING:   '(-.-)Zzz',
     STUDYING:   '(>_<) ...',
-    CLEANING:   'ﾍ(>.<ﾍ)',
+    CLEANING:   'H(>.<H)',
     CHILLING:   '(=^-^=)',
     EATING:     '(*^▽^*)',
-    EXERCISING: '(ง\'̀-\'́)ง',
+    EXERCISING: "(ง'̀-'́)ง",
+    WALKING:    '(^_^)/',
   };
+
   const LABELS = {
-    SLEEPING:   '* ZZZ... SLEEPING... ZZZ... *',
+    SLEEPING:   '* ZZZ... SLEEPING... *',
     STUDYING:   '* HITTING THE BOOKS! *',
     CLEANING:   '* SWEEPING THINGS UP! *',
     CHILLING:   '* JUST VIBING... *',
@@ -367,10 +324,64 @@
     EXERCISING: '* GETTING SWOLE! *',
   };
 
-  // ── Level from knowledge ─────────────────────────────────────────────────
-  const LEVEL_TITLES = ['NEWBIE', 'LEARNER', 'THINKER', 'SCHOLAR', 'EXPERT', 'MASTER'];
-  function getLevel(knowledge) {
-    return Math.min(5, Math.floor(knowledge / 17));
+  const LEVEL_TITLES = ['NEWBIE','LEARNER','THINKER','SCHOLAR','EXPERT','MASTER'];
+  function getLevel(knowledge) { return Math.min(5, Math.floor(knowledge / 17)); }
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let characterId   = null;
+  let characterName = 'CHARACTER';
+  let ws            = null;
+  let chatBusy      = false;
+  let firstState    = true;
+  let currentX      = 50;
+  let currentY      = 50;
+  let walkTimer     = null;
+
+  // ── Movement ─────────────────────────────────────────────────────────────
+  function placeCharacter(newX, newY, action, animate) {
+    const entity = document.getElementById('char-entity');
+    const sprite = document.getElementById('char-sprite');
+
+    if (!animate) {
+      // Instant placement: disable transition temporarily
+      entity.style.transition = 'none';
+      entity.style.left = newX + '%';
+      entity.style.top  = newY + '%';
+      entity.classList.remove('flip');
+      entity.getBoundingClientRect(); // force reflow
+      entity.style.transition = '';
+      sprite.textContent = SPRITES[action] || '(=^-^=)';
+      currentX = newX;
+      currentY = newY;
+      return;
+    }
+
+    const dx = newX - currentX;
+    const dy = newY - currentY;
+    const isMoving = Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5;
+
+    if (isMoving) {
+      // Walking: show walk sprite and flip if moving left
+      sprite.textContent = SPRITES.WALKING;
+      if (dx < 0) entity.classList.add('flip');
+      else         entity.classList.remove('flip');
+
+      // Trigger CSS transition
+      entity.style.left = newX + '%';
+      entity.style.top  = newY + '%';
+
+      // After walk completes, show action sprite facing right
+      if (walkTimer) clearTimeout(walkTimer);
+      walkTimer = setTimeout(() => {
+        sprite.textContent = SPRITES[action] || '(=^-^=)';
+        entity.classList.remove('flip');
+      }, WALK_MS + 50);
+    } else {
+      sprite.textContent = SPRITES[action] || '(=^-^=)';
+    }
+
+    currentX = newX;
+    currentY = newY;
   }
 
   // ── Creation ─────────────────────────────────────────────────────────────
@@ -384,19 +395,16 @@
     const errEl   = document.getElementById('create-error');
     errEl.textContent = '';
 
-    if (!name || !persona) {
-      errEl.textContent = '[ ENTER NAME AND PERSONA ]';
-      return;
-    }
+    if (!name || !persona) { errEl.textContent = '[ ENTER NAME AND PERSONA ]'; return; }
 
     document.getElementById('start-btn').disabled       = true;
     document.getElementById('loading-msg').style.display = 'block';
 
     try {
       const res = await fetch('/api/characters', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name, persona }),
+        body: JSON.stringify({ name, persona }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const char = await res.json();
@@ -405,13 +413,17 @@
       characterName = char.name;
 
       document.getElementById('char-name-display').textContent = char.name;
+      document.getElementById('char-nametag').textContent      = char.name;
       updateStats(char.stats);
-      updateAction(char.current_action, null);
+
+      // Place character instantly at starting position
+      placeCharacter(char.x ?? 50, char.y ?? 50, char.current_action, false);
+      document.getElementById('action-text').textContent = LABELS[char.current_action] || `* ${char.current_action} *`;
 
       document.getElementById('create-screen').style.display = 'none';
       document.getElementById('game-screen').style.display   = 'block';
 
-      appendSystem(`[ ${char.name} ONLINE — AGENT LOOP RUNNING EVERY 2 MIN ]`);
+      appendSystem(`[ ${char.name} ONLINE — AGENT LOOP ACTIVE ]`);
       connectWS(characterId);
     } catch (err) {
       errEl.textContent = `[ ERROR: ${err.message} ]`;
@@ -430,19 +442,25 @@
     ws.onmessage = evt => {
       const msg = JSON.parse(evt.data);
       if (msg.type !== 'state') return;
+
+      const newX = msg.x ?? 50;
+      const newY = msg.y ?? 50;
+
       updateStats(msg.stats);
-      updateAction(msg.current_action, msg.diary || null);
+      document.getElementById('action-text').textContent = LABELS[msg.current_action] || `* ${msg.current_action} *`;
+
+      placeCharacter(newX, newY, msg.current_action, !firstState);
+      firstState = false;
+
       if (msg.diary) {
-        appendSystem(`[ AGENT TICK ] ${msg.diary}`);
+        document.getElementById('diary-text').textContent = msg.diary;
+        appendSystem(`[ TICK ] ${msg.diary}`);
       }
     };
 
     ws.onclose = evt => {
       setWsStatus(false);
-      if (evt.code === 4004) {
-        appendSystem('[ ERROR: CHARACTER NOT FOUND ON SERVER — REFRESH TO RESTART ]');
-        return;
-      }
+      if (evt.code === 4004) { appendSystem('[ ERROR: CHARACTER NOT FOUND — REFRESH ]'); return; }
       setTimeout(() => { if (characterId) connectWS(characterId); }, 5000);
     };
 
@@ -461,40 +479,20 @@
     setBar('cleanliness', stats.cleanliness, 25, 50, 'is-warning', 'is-warning', 'is-error');
     setBar('knowledge',   stats.knowledge,    0,  0, 'is-primary', 'is-primary', 'is-primary');
     setBar('hunger',      stats.hunger,      20, 40, 'is-success', 'is-warning', 'is-error');
-
     document.getElementById('mood-value').textContent = stats.mood;
-
-    // Level badge
     const lvl = getLevel(stats.knowledge);
-    document.getElementById('level-badge').textContent =
-      `LVL ${lvl + 1} ${LEVEL_TITLES[lvl]}`;
+    document.getElementById('level-badge').textContent = `LVL ${lvl + 1} ${LEVEL_TITLES[lvl]}`;
   }
 
-  function setBar(name, val, dangerThresh, warnThresh, highClass, midClass, lowClass) {
+  function setBar(name, val, dangerThresh, warnThresh, highCls, midCls, lowCls) {
     const bar = document.getElementById(`bar-${name}`);
     const num = document.getElementById(`val-${name}`);
     bar.value = val;
     num.textContent = val;
-
-    // Color
     bar.className = 'nes-progress stat-bar ' +
-      (val <= dangerThresh ? lowClass : val <= warnThresh ? midClass : highClass);
-
-    // Danger blink on the value label
-    if (dangerThresh > 0 && val <= dangerThresh) {
-      num.classList.add('stat-danger');
-    } else {
-      num.classList.remove('stat-danger');
-    }
-  }
-
-  // ── Action display ────────────────────────────────────────────────────────
-  function updateAction(action, diary) {
-    document.getElementById('char-sprite').textContent = SPRITES[action] || '(=^-^=)';
-    document.getElementById('action-text').textContent = LABELS[action]  || `* ${action} *`;
-    if (diary) {
-      document.getElementById('diary-text').textContent = diary;
-    }
+      (val <= dangerThresh ? lowCls : val <= warnThresh ? midCls : highCls);
+    if (dangerThresh > 0 && val <= dangerThresh) num.classList.add('stat-danger');
+    else num.classList.remove('stat-danger');
   }
 
   // ── Chat ──────────────────────────────────────────────────────────────────
@@ -508,8 +506,8 @@
     const text  = input.value.trim();
     if (!text) return;
 
-    input.value  = '';
-    chatBusy     = true;
+    input.value = '';
+    chatBusy    = true;
     document.getElementById('send-btn').disabled = true;
 
     appendChat('user', text);
@@ -517,23 +515,21 @@
 
     try {
       const res = await fetch('/api/chat', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ character_id: characterId, message: text }),
+        body: JSON.stringify({ character_id: characterId, message: text }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-
       typingEl.remove();
       appendChat('char', data.response, characterName);
       updateStats(data.stats);
-      updateAction(data.current_action, null);
     } catch (err) {
       typingEl.remove();
       appendSystem(`[ ERROR: ${err.message} ]`);
     }
 
-    chatBusy     = false;
+    chatBusy = false;
     document.getElementById('send-btn').disabled = false;
     input.focus();
   }
@@ -542,11 +538,9 @@
     const log = document.getElementById('chat-log');
     const div = document.createElement('div');
     div.className = `chat-msg ${type}`;
-    if (type === 'char') {
-      div.textContent = `> ${(label || characterName).toUpperCase()}: ${text}`;
-    } else {
-      div.textContent = text;
-    }
+    div.textContent = type === 'char'
+      ? `> ${(label || characterName).toUpperCase()}: ${text}`
+      : text;
     log.appendChild(div);
     log.scrollTop = log.scrollHeight;
     return div;

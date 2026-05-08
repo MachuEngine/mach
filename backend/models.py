@@ -41,6 +41,8 @@ class Character(BaseModel):
     stats:          CharacterStats = Field(default_factory=CharacterStats)
     current_action: Action         = Action.CHILLING
     created_at:     float          = Field(default_factory=time.time)
+    x:              float          = Field(default=50.0)
+    y:              float          = Field(default=50.0)
 
 
 # --- Request / Response schemas ---
@@ -62,6 +64,17 @@ class ChatResponse(BaseModel):
     current_action: Action
     stats:          CharacterStats
 
+
+# --- Room zones: action → coordinate (0–100 = % of room width/height) ---
+
+ZONES: dict[Action, dict] = {
+    Action.SLEEPING:   {"x": 10.0, "y": 20.0},
+    Action.EATING:     {"x": 55.0, "y": 18.0},
+    Action.STUDYING:   {"x": 82.0, "y": 52.0},
+    Action.CHILLING:   {"x": 16.0, "y": 62.0},
+    Action.CLEANING:   {"x": 46.0, "y": 76.0},
+    Action.EXERCISING: {"x": 80.0, "y": 78.0},
+}
 
 # --- Stat delta rules applied each agent tick ---
 # hunger decays every tick; EATING is the only way to restore it.

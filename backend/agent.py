@@ -12,7 +12,7 @@ from backend.config import (
     COLLECTION_DIARY,
 )
 from backend.memory import retrieve_memories, store_memory
-from backend.models import Action, Character, apply_action_tick
+from backend.models import Action, Character, ZONES, apply_action_tick
 from backend.store import characters, manager
 
 logger = logging.getLogger(__name__)
@@ -111,6 +111,8 @@ async def agent_tick(char: Character) -> None:
     action, reason = await decide_action(char)
     char.current_action = action
     char.stats = apply_action_tick(char.stats, action)
+    zone = ZONES.get(action, {"x": 50.0, "y": 50.0})
+    char.x, char.y = zone["x"], zone["y"]
 
     entry = (
         f"{char.name} chose to {action.value.lower()}. "
@@ -132,6 +134,8 @@ async def agent_tick(char: Character) -> None:
         "current_action": char.current_action,
         "stats": char.stats.model_dump(),
         "diary": entry,
+        "x": char.x,
+        "y": char.y,
     })
     logger.info(f"[TICK] {char.name} → {action.value} | {reason[:80]}")
 

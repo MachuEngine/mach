@@ -135,6 +135,8 @@ async def websocket_endpoint(websocket: WebSocket, character_id: str):
             "name": char.name,
             "current_action": char.current_action,
             "stats": char.stats.model_dump(),
+            "x": char.x,
+            "y": char.y,
         })
         # Keep connection alive; agent loop pushes updates via manager.broadcast
         while True:
