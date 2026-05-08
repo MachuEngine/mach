@@ -19,7 +19,6 @@
       min-height: 100vh;
       margin: 0;
       padding: 16px;
-      /* subtle scanline overlay */
       background-image: repeating-linear-gradient(
         0deg,
         transparent,
@@ -97,9 +96,11 @@
       align-items: center;
       margin-bottom: 10px;
     }
-    .game-title   { font-size: 11px; color: #ffdd57; letter-spacing: 3px; }
+    .game-title        { font-size: 11px; color: #ffdd57; letter-spacing: 3px; }
     #char-name-display { font-size: 9px; color: #fff; }
-    .player-tag   { font-size: 7px; color: #92cc41; }
+    .header-right      { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .player-tag        { font-size: 7px; color: #92cc41; }
+    #level-badge       { font-size: 7px; color: #ffdd57; }
 
     /* Stats Panel */
     #stats-panel  { margin-bottom: 10px; }
@@ -135,6 +136,13 @@
     #mood-value { font-size: 7px; color: #ffdd57; }
 
     progress.nes-progress { height: 14px; width: 100%; }
+
+    /* Critical stat warning blink */
+    @keyframes danger-blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+    .stat-danger { animation: danger-blink 0.8s step-end infinite; }
 
     /* Character Viewport */
     #character-viewport { margin-bottom: 10px; }
@@ -258,7 +266,10 @@
   <div class="game-header">
     <span class="game-title">★ MACH</span>
     <span id="char-name-display">---</span>
-    <span class="player-tag">PLAYER 1</span>
+    <div class="header-right">
+      <span class="player-tag">PLAYER 1</span>
+      <span id="level-badge">LVL 1</span>
+    </div>
   </div>
 
   <!-- Stats Panel -->
@@ -286,6 +297,13 @@
           <progress id="bar-cleanliness" class="nes-progress is-warning stat-bar"
                     value="70" max="100"></progress>
           <span id="val-cleanliness" class="stat-val">70</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">HUNGER</span>
+          <progress id="bar-hunger" class="nes-progress is-error stat-bar"
+                    value="70" max="100"></progress>
+          <span id="val-hunger" class="stat-val">70</span>
         </div>
 
         <div class="mood-row">
@@ -333,17 +351,27 @@
 
   // ── Action visuals ───────────────────────────────────────────────────────
   const SPRITES = {
-    SLEEPING: '(-.-)Zzz',
-    STUDYING: '(>_<) ...',
-    CLEANING: 'ﾍ(>.<ﾍ)',
-    CHILLING: '(=^-^=)',
+    SLEEPING:   '(-.-)Zzz',
+    STUDYING:   '(>_<) ...',
+    CLEANING:   'ﾍ(>.<ﾍ)',
+    CHILLING:   '(=^-^=)',
+    EATING:     '(*^▽^*)',
+    EXERCISING: '(ง\'̀-\'́)ง',
   };
   const LABELS = {
-    SLEEPING: '* ZZZ... SLEEPING... ZZZ... *',
-    STUDYING: '* HITTING THE BOOKS! *',
-    CLEANING: '* SWEEPING THINGS UP! *',
-    CHILLING: '* JUST VIBING... *',
+    SLEEPING:   '* ZZZ... SLEEPING... ZZZ... *',
+    STUDYING:   '* HITTING THE BOOKS! *',
+    CLEANING:   '* SWEEPING THINGS UP! *',
+    CHILLING:   '* JUST VIBING... *',
+    EATING:     '* NOM NOM NOM... *',
+    EXERCISING: '* GETTING SWOLE! *',
   };
+
+  // ── Level from knowledge ─────────────────────────────────────────────────
+  const LEVEL_TITLES = ['NEWBIE', 'LEARNER', 'THINKER', 'SCHOLAR', 'EXPERT', 'MASTER'];
+  function getLevel(knowledge) {
+    return Math.min(5, Math.floor(knowledge / 17));
+  }
 
   // ── Creation ─────────────────────────────────────────────────────────────
   document.getElementById('char-name').addEventListener('keydown', e => {
@@ -361,7 +389,7 @@
       return;
     }
 
-    document.getElementById('start-btn').disabled    = true;
+    document.getElementById('start-btn').disabled       = true;
     document.getElementById('loading-msg').style.display = 'block';
 
     try {
@@ -383,11 +411,11 @@
       document.getElementById('create-screen').style.display = 'none';
       document.getElementById('game-screen').style.display   = 'block';
 
-      appendSystem(`[ ${char.name} ONLINE — AGENT LOOP RUNNING EVERY ${char.id ? '2' : '?'} MIN ]`);
+      appendSystem(`[ ${char.name} ONLINE — AGENT LOOP RUNNING EVERY 2 MIN ]`);
       connectWS(characterId);
     } catch (err) {
       errEl.textContent = `[ ERROR: ${err.message} ]`;
-      document.getElementById('start-btn').disabled    = false;
+      document.getElementById('start-btn').disabled       = false;
       document.getElementById('loading-msg').style.display = 'none';
     }
   });
@@ -415,7 +443,6 @@
         appendSystem('[ ERROR: CHARACTER NOT FOUND ON SERVER — REFRESH TO RESTART ]');
         return;
       }
-      // Auto-reconnect
       setTimeout(() => { if (characterId) connectWS(characterId); }, 5000);
     };
 
@@ -430,20 +457,35 @@
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   function updateStats(stats) {
-    setBar('energy',      stats.energy);
-    setBar('cleanliness', stats.cleanliness);
-    setBar('knowledge',   stats.knowledge);
+    setBar('energy',      stats.energy,      30, 60, 'is-success', 'is-warning', 'is-error');
+    setBar('cleanliness', stats.cleanliness, 25, 50, 'is-warning', 'is-warning', 'is-error');
+    setBar('knowledge',   stats.knowledge,    0,  0, 'is-primary', 'is-primary', 'is-primary');
+    setBar('hunger',      stats.hunger,      20, 40, 'is-success', 'is-warning', 'is-error');
+
     document.getElementById('mood-value').textContent = stats.mood;
 
-    // Recolour energy bar by threshold
-    const bar = document.getElementById('bar-energy');
-    bar.className = 'nes-progress stat-bar ' +
-      (stats.energy < 30 ? 'is-error' : stats.energy < 60 ? 'is-warning' : 'is-success');
+    // Level badge
+    const lvl = getLevel(stats.knowledge);
+    document.getElementById('level-badge').textContent =
+      `LVL ${lvl + 1} ${LEVEL_TITLES[lvl]}`;
   }
 
-  function setBar(name, val) {
-    document.getElementById(`bar-${name}`).value       = val;
-    document.getElementById(`val-${name}`).textContent = val;
+  function setBar(name, val, dangerThresh, warnThresh, highClass, midClass, lowClass) {
+    const bar = document.getElementById(`bar-${name}`);
+    const num = document.getElementById(`val-${name}`);
+    bar.value = val;
+    num.textContent = val;
+
+    // Color
+    bar.className = 'nes-progress stat-bar ' +
+      (val <= dangerThresh ? lowClass : val <= warnThresh ? midClass : highClass);
+
+    // Danger blink on the value label
+    if (dangerThresh > 0 && val <= dangerThresh) {
+      num.classList.add('stat-danger');
+    } else {
+      num.classList.remove('stat-danger');
+    }
   }
 
   // ── Action display ────────────────────────────────────────────────────────

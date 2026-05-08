@@ -37,6 +37,7 @@ def _build_system_prompt(char: Character, diary_mems: list, chat_mems: list) -> 
         f"- Energy: {s.energy}/100\n"
         f"- Cleanliness: {s.cleanliness}/100\n"
         f"- Knowledge: {s.knowledge}/100\n"
+        f"- Hunger: {s.hunger}/100 (0 = starving, 100 = full)\n"
         f"- Mood: {s.mood}\n"
         f"- Current Action: {char.current_action}"
         f"{mem_block}"
@@ -59,7 +60,9 @@ async def _fetch_memories(char: Character, query: str):
 
 def _fallback_action(char: Character):
     s = char.stats
-    if s.energy < 30:
+    if s.hunger < 25:
+        return Action.EATING, "Starving! Need food immediately."
+    if s.energy < 20:
         return Action.SLEEPING, "Energy critically low, must rest."
     if s.cleanliness < 30:
         return Action.CLEANING, "Getting too dirty, time to clean up."
@@ -74,7 +77,7 @@ async def decide_action(char: Character):
     prompt = (
         f"Your current stats: Energy={char.stats.energy}, "
         f"Cleanliness={char.stats.cleanliness}, Knowledge={char.stats.knowledge}, "
-        f"Mood={char.stats.mood}.\n\n"
+        f"Hunger={char.stats.hunger} (eat if below 30!), Mood={char.stats.mood}.\n\n"
         "Choose your next action. Respond ONLY with a single line of valid JSON:\n"
         '{"action": "<ACTION>", "reason": "<one sentence>"}\n'
         f"Valid actions: {', '.join(a.value for a in Action)}"
