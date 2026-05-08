@@ -1,5 +1,523 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Mach — Step 2 placeholder</title></head>
-<body><p>Frontend coming in Step 4.</p></body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MACH // AI CHARACTER SIM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      font-family: 'Press Start 2P', monospace !important;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px;
+      /* subtle scanline overlay */
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+    }
+
+    /* ── Creation Screen ─────────────────────────────────── */
+    #create-screen {
+      max-width: 580px;
+      margin: 32px auto;
+    }
+    .create-title {
+      font-size: 18px;
+      color: #ffdd57;
+      text-align: center;
+      margin-bottom: 4px;
+      letter-spacing: 4px;
+    }
+    .create-subtitle {
+      font-size: 8px;
+      color: #92cc41;
+      text-align: center;
+      margin-bottom: 28px;
+      letter-spacing: 2px;
+    }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      font-size: 7px;
+      color: #92cc41;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .nes-input,
+    .nes-textarea {
+      width: 100%;
+      font-size: 8px !important;
+      background: #111 !important;
+      color: #fff !important;
+    }
+    #start-btn {
+      width: 100%;
+      font-size: 9px !important;
+      margin-top: 8px;
+    }
+    #create-error {
+      font-size: 7px;
+      color: #e76e55;
+      margin-top: 10px;
+      text-align: center;
+      min-height: 14px;
+    }
+    #loading-msg {
+      font-size: 7px;
+      color: #ffdd57;
+      text-align: center;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* ── Game Screen ─────────────────────────────────────── */
+    #game-screen {
+      max-width: 760px;
+      margin: 0 auto;
+      display: none;
+    }
+
+    /* Header */
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .game-title   { font-size: 11px; color: #ffdd57; letter-spacing: 3px; }
+    #char-name-display { font-size: 9px; color: #fff; }
+    .player-tag   { font-size: 7px; color: #92cc41; }
+
+    /* Stats Panel */
+    #stats-panel  { margin-bottom: 10px; }
+    #stats-panel .nes-container { padding: 10px 16px; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 24px;
+    }
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stat-label {
+      font-size: 6px;
+      color: #92cc41;
+      white-space: nowrap;
+      min-width: 84px;
+    }
+    .stat-bar { flex: 1; height: 12px; }
+    .stat-val  { font-size: 7px; color: #fff; min-width: 22px; text-align: right; }
+
+    .mood-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      grid-column: span 2;
+      margin-top: 2px;
+    }
+    .mood-label { font-size: 6px; color: #92cc41; min-width: 84px; }
+    #mood-value { font-size: 7px; color: #ffdd57; }
+
+    progress.nes-progress { height: 14px; width: 100%; }
+
+    /* Character Viewport */
+    #character-viewport { margin-bottom: 10px; }
+    #character-viewport .nes-container {
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #0a0a0a !important;
+    }
+    #char-sprite {
+      font-size: 26px;
+      letter-spacing: 3px;
+      animation: bob 2s ease-in-out infinite;
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-8px); }
+    }
+    #action-text {
+      font-size: 8px;
+      color: #ffdd57;
+      letter-spacing: 2px;
+    }
+    #diary-text {
+      font-size: 6px;
+      color: #666;
+      max-width: 92%;
+      text-align: center;
+      line-height: 2;
+      min-height: 14px;
+    }
+
+    /* Chat Panel */
+    #chat-panel .nes-container { padding: 10px 14px; }
+    #chat-log {
+      height: 190px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #0a0a0a;
+      border: 2px solid #333;
+    }
+    .chat-msg {
+      font-size: 7px;
+      margin-bottom: 9px;
+      line-height: 2;
+      word-break: break-word;
+    }
+    .chat-msg.user   { color: #92cc41; }
+    .chat-msg.user::before { content: "> YOU:  "; }
+    .chat-msg.char   { color: #fff; }
+    .chat-msg.system { color: #555; }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    #chat-input {
+      flex: 1;
+      font-size: 7px !important;
+      background: #111 !important;
+      color: #fff !important;
+    }
+    #send-btn { font-size: 7px !important; white-space: nowrap; }
+
+    .ws-status {
+      font-size: 6px;
+      margin-top: 6px;
+      text-align: right;
+    }
+    .ws-status.connected    { color: #92cc41; }
+    .ws-status.disconnected { color: #e76e55; }
+
+    /* Scrollbar */
+    #chat-log::-webkit-scrollbar       { width: 6px; }
+    #chat-log::-webkit-scrollbar-track { background: #111; }
+    #chat-log::-webkit-scrollbar-thumb { background: #444; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .blink { animation: blink 1s step-end infinite; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ CREATION SCREEN ══════════════════════ -->
+<div id="create-screen">
+  <div class="nes-container with-title is-dark is-centered">
+    <p class="title">NEW GAME</p>
+
+    <p class="create-title">★ MACH ★</p>
+    <p class="create-subtitle">AI CHARACTER SIMULATOR</p>
+
+    <div class="form-group">
+      <label for="char-name">CHARACTER NAME</label>
+      <input id="char-name" type="text" class="nes-input is-dark"
+             placeholder="e.g.  PIXEL" maxlength="20">
+    </div>
+
+    <div class="form-group">
+      <label for="char-persona">PERSONA</label>
+      <textarea id="char-persona" class="nes-textarea is-dark" rows="4"
+        placeholder="Describe personality, quirks, backstory..."></textarea>
+    </div>
+
+    <button id="start-btn" class="nes-btn is-success">
+      &gt; INSERT COIN &amp; START
+    </button>
+    <p id="create-error"></p>
+    <p id="loading-msg">BOOTING CHARACTER...</p>
+  </div>
+</div>
+
+<!-- ══════════════════ GAME SCREEN ══════════════════════════ -->
+<div id="game-screen">
+
+  <!-- Header -->
+  <div class="game-header">
+    <span class="game-title">★ MACH</span>
+    <span id="char-name-display">---</span>
+    <span class="player-tag">PLAYER 1</span>
+  </div>
+
+  <!-- Stats Panel -->
+  <div id="stats-panel">
+    <div class="nes-container is-dark with-title">
+      <p class="title">STATS</p>
+      <div class="stats-grid">
+
+        <div class="stat-row">
+          <span class="stat-label">ENERGY</span>
+          <progress id="bar-energy" class="nes-progress is-success stat-bar"
+                    value="70" max="100"></progress>
+          <span id="val-energy" class="stat-val">70</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">KNOWLEDGE</span>
+          <progress id="bar-knowledge" class="nes-progress is-primary stat-bar"
+                    value="50" max="100"></progress>
+          <span id="val-knowledge" class="stat-val">50</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label">CLEANNESS</span>
+          <progress id="bar-cleanliness" class="nes-progress is-warning stat-bar"
+                    value="70" max="100"></progress>
+          <span id="val-cleanliness" class="stat-val">70</span>
+        </div>
+
+        <div class="mood-row">
+          <span class="mood-label">MOOD</span>
+          <span id="mood-value">CHILL</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Character Viewport -->
+  <div id="character-viewport">
+    <div class="nes-container is-dark is-rounded is-centered">
+      <div id="char-sprite">(=^-^=)</div>
+      <div id="action-text">* CHILLING... *</div>
+      <div id="diary-text"></div>
+    </div>
+  </div>
+
+  <!-- Chat Panel -->
+  <div id="chat-panel">
+    <div class="nes-container is-dark with-title">
+      <p class="title">CHAT</p>
+      <div id="chat-log">
+        <div class="chat-msg system">[ SYSTEM ONLINE — TALK TO YOUR CHARACTER ]</div>
+      </div>
+      <div class="chat-input-row">
+        <input id="chat-input" type="text" class="nes-input is-dark"
+               placeholder="say something..." maxlength="200">
+        <button id="send-btn" class="nes-btn is-primary" onclick="sendChat()">SEND</button>
+      </div>
+      <div id="ws-status" class="ws-status disconnected">● WS: DISCONNECTED</div>
+    </div>
+  </div>
+
+</div><!-- end #game-screen -->
+
+<script>
+  // ── State ────────────────────────────────────────────────────────────────
+  let characterId   = null;
+  let characterName = 'CHARACTER';
+  let ws            = null;
+  let chatBusy      = false;
+
+  // ── Action visuals ───────────────────────────────────────────────────────
+  const SPRITES = {
+    SLEEPING: '(-.-)Zzz',
+    STUDYING: '(>_<) ...',
+    CLEANING: 'ﾍ(>.<ﾍ)',
+    CHILLING: '(=^-^=)',
+  };
+  const LABELS = {
+    SLEEPING: '* ZZZ... SLEEPING... ZZZ... *',
+    STUDYING: '* HITTING THE BOOKS! *',
+    CLEANING: '* SWEEPING THINGS UP! *',
+    CHILLING: '* JUST VIBING... *',
+  };
+
+  // ── Creation ─────────────────────────────────────────────────────────────
+  document.getElementById('char-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('char-persona').focus();
+  });
+
+  document.getElementById('start-btn').addEventListener('click', async () => {
+    const name    = document.getElementById('char-name').value.trim().toUpperCase();
+    const persona = document.getElementById('char-persona').value.trim();
+    const errEl   = document.getElementById('create-error');
+    errEl.textContent = '';
+
+    if (!name || !persona) {
+      errEl.textContent = '[ ENTER NAME AND PERSONA ]';
+      return;
+    }
+
+    document.getElementById('start-btn').disabled    = true;
+    document.getElementById('loading-msg').style.display = 'block';
+
+    try {
+      const res = await fetch('/api/characters', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name, persona }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const char = await res.json();
+
+      characterId   = char.id;
+      characterName = char.name;
+
+      document.getElementById('char-name-display').textContent = char.name;
+      updateStats(char.stats);
+      updateAction(char.current_action, null);
+
+      document.getElementById('create-screen').style.display = 'none';
+      document.getElementById('game-screen').style.display   = 'block';
+
+      appendSystem(`[ ${char.name} ONLINE — AGENT LOOP RUNNING EVERY ${char.id ? '2' : '?'} MIN ]`);
+      connectWS(characterId);
+    } catch (err) {
+      errEl.textContent = `[ ERROR: ${err.message} ]`;
+      document.getElementById('start-btn').disabled    = false;
+      document.getElementById('loading-msg').style.display = 'none';
+    }
+  });
+
+  // ── WebSocket ────────────────────────────────────────────────────────────
+  function connectWS(id) {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}/ws/character/${id}`);
+
+    ws.onopen = () => setWsStatus(true);
+
+    ws.onmessage = evt => {
+      const msg = JSON.parse(evt.data);
+      if (msg.type !== 'state') return;
+      updateStats(msg.stats);
+      updateAction(msg.current_action, msg.diary || null);
+      if (msg.diary) {
+        appendSystem(`[ AGENT TICK ] ${msg.diary}`);
+      }
+    };
+
+    ws.onclose = evt => {
+      setWsStatus(false);
+      if (evt.code === 4004) {
+        appendSystem('[ ERROR: CHARACTER NOT FOUND ON SERVER — REFRESH TO RESTART ]');
+        return;
+      }
+      // Auto-reconnect
+      setTimeout(() => { if (characterId) connectWS(characterId); }, 5000);
+    };
+
+    ws.onerror = () => setWsStatus(false);
+  }
+
+  function setWsStatus(online) {
+    const el = document.getElementById('ws-status');
+    el.textContent = online ? '● WS: CONNECTED' : '● WS: DISCONNECTED';
+    el.className   = 'ws-status ' + (online ? 'connected' : 'disconnected');
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  function updateStats(stats) {
+    setBar('energy',      stats.energy);
+    setBar('cleanliness', stats.cleanliness);
+    setBar('knowledge',   stats.knowledge);
+    document.getElementById('mood-value').textContent = stats.mood;
+
+    // Recolour energy bar by threshold
+    const bar = document.getElementById('bar-energy');
+    bar.className = 'nes-progress stat-bar ' +
+      (stats.energy < 30 ? 'is-error' : stats.energy < 60 ? 'is-warning' : 'is-success');
+  }
+
+  function setBar(name, val) {
+    document.getElementById(`bar-${name}`).value       = val;
+    document.getElementById(`val-${name}`).textContent = val;
+  }
+
+  // ── Action display ────────────────────────────────────────────────────────
+  function updateAction(action, diary) {
+    document.getElementById('char-sprite').textContent = SPRITES[action] || '(=^-^=)';
+    document.getElementById('action-text').textContent = LABELS[action]  || `* ${action} *`;
+    if (diary) {
+      document.getElementById('diary-text').textContent = diary;
+    }
+  }
+
+  // ── Chat ──────────────────────────────────────────────────────────────────
+  document.getElementById('chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) sendChat();
+  });
+
+  async function sendChat() {
+    if (chatBusy || !characterId) return;
+    const input = document.getElementById('chat-input');
+    const text  = input.value.trim();
+    if (!text) return;
+
+    input.value  = '';
+    chatBusy     = true;
+    document.getElementById('send-btn').disabled = true;
+
+    appendChat('user', text);
+    const typingEl = appendChat('char', '▌');
+
+    try {
+      const res = await fetch('/api/chat', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ character_id: characterId, message: text }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      typingEl.remove();
+      appendChat('char', data.response, characterName);
+      updateStats(data.stats);
+      updateAction(data.current_action, null);
+    } catch (err) {
+      typingEl.remove();
+      appendSystem(`[ ERROR: ${err.message} ]`);
+    }
+
+    chatBusy     = false;
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  }
+
+  function appendChat(type, text, label) {
+    const log = document.getElementById('chat-log');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${type}`;
+    if (type === 'char') {
+      div.textContent = `> ${(label || characterName).toUpperCase()}: ${text}`;
+    } else {
+      div.textContent = text;
+    }
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  }
+
+  function appendSystem(text) {
+    const log = document.getElementById('chat-log');
+    const div = document.createElement('div');
+    div.className   = 'chat-msg system';
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+</script>
+</body>
 </html>
